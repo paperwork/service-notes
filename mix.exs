@@ -29,8 +29,7 @@ defmodule Paperwork.Notes.MixProject do
             {:corsica, "~> 1.1"},
             {:mongodb, "~> 0.4.7"},
             {:poolboy, "~> 1.5"},
-            {:bcrypt_elixir, "~> 2.0"},
-            {:joken, "~> 2.0"},
+            {:elixir_uuid, "~> 1.2"},
             {:distillery, "~> 2.0"},
             {:exsync, "~> 0.2", only: :dev}
         ]
