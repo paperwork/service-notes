@@ -13,8 +13,8 @@ defmodule Paperwork.Notes.MixProject do
 
     def application do
         [
-            extra_applications: [:logger],
-            mod: {Paperwork.Application, []}
+            extra_applications: [:confex, :logger],
+            mod: {Paperwork.Notes.Application, []}
         ]
     end
 
