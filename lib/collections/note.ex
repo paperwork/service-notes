@@ -66,6 +66,15 @@ defmodule Paperwork.Collections.Note do
         |> strip_privates
     end
 
+    @spec list(global_id :: String.t) :: {:ok, [%__MODULE__{}]} | {:notfound, nil}
+    def list(global_id) when is_binary(global_id) do
+        %{
+            "access.#{global_id}.can_read": true
+        }
+        |> collection_find(true)
+        |> strip_privates
+    end
+
     @spec create_using_version(version :: Map.t, global_id :: String.t) :: {:ok, %__MODULE__{}} | {:error, String.t}
     def create_using_version(%{title: _title, body: _body, attachments: _attachments, tags: _tags, path: path} = version, global_id) when is_map(version) and is_binary(global_id) do
         version_id = UUID.uuid4()
