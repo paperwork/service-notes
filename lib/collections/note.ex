@@ -13,6 +13,7 @@ defmodule Paperwork.Collections.Note do
                 body: String.t(),
                 attachments: [String.t()],
                 tags: [String.t()],
+                meta: Map.t(),
                 created_by: String.t(),
                 created_at: DateTime.t()
             }

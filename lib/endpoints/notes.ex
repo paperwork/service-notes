@@ -27,9 +27,10 @@ defmodule Paperwork.Notes.Endpoints.Notes do
         desc "Create Note"
         params do
             requires :title,       type: String
-            optional :body,        type: String
+            requires :body,        type: String
             requires :attachments, type: List[String]
             requires :tags,        type: List[String]
+            requires :meta,        type: Map
             requires :path,        type: String
         end
         post do
@@ -58,9 +59,10 @@ defmodule Paperwork.Notes.Endpoints.Notes do
             desc "Update Note"
             params do
                 requires :title,       type: String
-                optional :body,        type: String
+                requires :body,        type: String
                 requires :attachments, type: List[String]
                 requires :tags,        type: List[String]
+                requires :meta,        type: Map
                 requires :path,        type: String
             end
             put do
