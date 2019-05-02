@@ -5,7 +5,7 @@ defmodule Paperwork.Notes.Application do
         case Code.ensure_loaded(ExSync) do
             {:module, ExSync = mod} ->
                 mod.start()
-            {:error, :nofile} ->
+            {:error, _} ->
                 :ok
         end
 
