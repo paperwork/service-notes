@@ -15,6 +15,9 @@ config :paperwork, :server,
     cache_ttl_default: 86_400,
     cache_janitor_interval: 60
 
+config :paperwork, :mongodb,
+    url: {:system, :string, "MONGODB_URL", "mongodb://localhost:27017/notes"}
+
 config :paperwork, :internal,
     cache_ttl: 60,
     configs: {:system, :string, "INTERNAL_RESOURCE_CONFIGS", "http://localhost:8880/internal/configs"},
