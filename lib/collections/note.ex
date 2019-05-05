@@ -149,6 +149,11 @@ defmodule Paperwork.Collections.Note do
                           |> Map.get(String.to_atom(global_id))
                           |> Map.get(:path)
                   )
+        |> Map.put(:access, access
+                          |> Map.keys()
+                          |> Enum.map_reduce(%{}, fn access_key, merged_map -> { access_key, Map.merge(merged_map, %{ access_key => Map.get(access, access_key) |> Map.delete(:path) }) } end)
+                          |> elem(1)
+                  )
         |> Map.put(:id, BSON.ObjectId.encode!(id)) #TODO: Fix this hack in a generic way
     end
 
