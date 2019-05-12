@@ -9,9 +9,14 @@ defmodule Paperwork.Notes.Endpoints.Notes do
     namespace :notes do
 
         get do
-            global_id = conn |> Paperwork.Auth.Session.get_global_id()
+            global_id =
+                conn
+                |> Paperwork.Auth.Session.get_global_id()
 
-            response = case conn |> Paperwork.Auth.Session.get_user_role do
+            response = case \
+                conn
+                |> Paperwork.Auth.Session.get_user_role \
+            do
                 :role_admin ->
                     Paperwork.Collections.Note.list()
                     |> Paperwork.Collections.Note.current_version(global_id)
@@ -34,11 +39,14 @@ defmodule Paperwork.Notes.Endpoints.Notes do
             requires :path,        type: String
         end
         post do
-            global_id = conn |> Paperwork.Auth.Session.get_global_id()
+            global_id =
+                conn
+                |> Paperwork.Auth.Session.get_global_id()
 
-            response = params
-                       |> Paperwork.Collections.Note.create_using_version(global_id)
-                       |> Paperwork.Collections.Note.current_version(global_id)
+            response =
+                params
+                |> Paperwork.Collections.Note.create_using_version(global_id)
+                |> Paperwork.Collections.Note.current_version(global_id)
 
             conn
             |> resp(response)
@@ -46,11 +54,14 @@ defmodule Paperwork.Notes.Endpoints.Notes do
 
         route_param :id do
             get do
-                global_id = conn |> Paperwork.Auth.Session.get_global_id()
+                global_id =
+                    conn
+                    |> Paperwork.Auth.Session.get_global_id()
 
-                response = params[:id]
-                           |> Paperwork.Collections.Note.show
-                           |> Paperwork.Collections.Note.current_version(global_id)
+                response =
+                    params[:id]
+                    |> Paperwork.Collections.Note.show
+                    |> Paperwork.Collections.Note.current_version(global_id)
 
                 conn
                 |> resp(response)
@@ -66,11 +77,14 @@ defmodule Paperwork.Notes.Endpoints.Notes do
                 requires :path,        type: String
             end
             put do
-                global_id = conn |> Paperwork.Auth.Session.get_global_id()
+                global_id =
+                    conn
+                    |> Paperwork.Auth.Session.get_global_id()
 
-                response = params
-                           |> Paperwork.Collections.Note.update_using_version(global_id)
-                           |> Paperwork.Collections.Note.current_version(global_id)
+                response =
+                    params
+                    |> Paperwork.Collections.Note.update_using_version(global_id)
+                    |> Paperwork.Collections.Note.current_version(global_id)
 
                 conn
                 |> resp(response)

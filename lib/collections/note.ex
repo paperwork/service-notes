@@ -83,10 +83,11 @@ defmodule Paperwork.Collections.Note do
         %__MODULE__{
             version: version_id,
             versions: %{
-                String.to_atom(version_id) => version
-                                              |> Map.delete(:path)
-                                              |> Map.put(:created_by, global_id)
-                                              |> Map.put(:created_at, DateTime.utc_now())
+                String.to_atom(version_id) =>
+                    version
+                    |> Map.delete(:path)
+                    |> Map.put(:created_by, global_id)
+                    |> Map.put(:created_at, DateTime.utc_now())
             },
             access: %{
                 String.to_atom(global_id) => %{
@@ -118,11 +119,12 @@ defmodule Paperwork.Collections.Note do
         %{
             "$set": %{
                 version: version_id,
-                "versions.#{version_id}": version
-                                          |> Map.delete(:id)
-                                          |> Map.delete(:path)
-                                          |> Map.put(:created_by, global_id)
-                                          |> Map.put(:created_at, DateTime.utc_now()),
+                "versions.#{version_id}":
+                    version
+                    |> Map.delete(:id)
+                    |> Map.delete(:path)
+                    |> Map.put(:created_by, global_id)
+                    |> Map.put(:created_at, DateTime.utc_now()),
                 "access.#{global_id}.path": path,
                 updated_at: DateTime.utc_now(),
             }
@@ -145,15 +147,26 @@ defmodule Paperwork.Collections.Note do
     def current_version(%__MODULE__{id: id, version: version_id, versions: versions_map, access: access} = _model, global_id) when is_binary(version_id) and is_map(versions_map) and is_map(access) and is_binary(global_id) do
         versions_map
         |> Map.get(String.to_atom(version_id))
-        |> Map.put(:path, access
-                          |> Map.get(String.to_atom(global_id))
-                          |> Map.get(:path)
+        |> Map.put(:path,
+            access
+            |> Map.get(String.to_atom(global_id))
+            |> Map.get(:path)
                   )
-        |> Map.put(:access, access
-                          |> Map.keys()
-                          |> Enum.map_reduce(%{}, fn access_key, merged_map -> { access_key, Map.merge(merged_map, %{ access_key => Map.get(access, access_key) |> Map.delete(:path) }) } end)
-                          |> elem(1)
-                  )
+        |> Map.put(:access,
+            access
+            |> Map.keys()
+            |> Enum.map_reduce(%{}, fn access_key, merged_map ->
+                {
+                    access_key,
+                    Map.merge(merged_map, %{
+                        access_key =>
+                            Map.get(access, access_key)
+                            |> Map.delete(:path)
+                    })
+                }
+            end)
+            |> elem(1)
+        )
         |> Map.put(:id, BSON.ObjectId.encode!(id)) #TODO: Fix this hack in a generic way
     end
 
