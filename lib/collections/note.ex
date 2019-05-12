@@ -78,7 +78,7 @@ defmodule Paperwork.Collections.Note do
 
     @spec create_using_version(version :: Map.t, global_id :: String.t) :: {:ok, %__MODULE__{}} | {:error, String.t}
     def create_using_version(%{title: _title, body: _body, attachments: _attachments, tags: _tags, path: path} = version, global_id) when is_map(version) and is_binary(global_id) do
-        version_id = UUID.uuid4()
+        version_id = Mongo.object_id() |> BSON.ObjectId.encode!()
 
         %__MODULE__{
             version: version_id,
@@ -108,7 +108,7 @@ defmodule Paperwork.Collections.Note do
 
     @spec update_using_version(version :: Map.t, global_id :: String.t) :: {:ok, %__MODULE__{}} | {:error, String.t}
     def update_using_version(%{id: id, title: _title, body: _body, attachments: _attachments, tags: _tags, path: path} = version, global_id) when is_binary(id) and is_map(version) and is_binary(global_id) do
-        version_id = UUID.uuid4()
+        version_id = Mongo.object_id() |> BSON.ObjectId.encode!()
 
         query = %{
             id: id,
