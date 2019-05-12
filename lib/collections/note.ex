@@ -162,6 +162,10 @@ defmodule Paperwork.Collections.Note do
                         access_key =>
                             Map.get(access, access_key)
                             |> Map.delete(:path)
+                            |> Map.put(:user,
+                                Paperwork.Internal.Request.user!(Atom.to_string(access_key))
+                                |> Map.take(["email", "name"]) # TODO: Should/shouldn't the email address be returned?
+                            )
                     })
                 }
             end)
