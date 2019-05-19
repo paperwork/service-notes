@@ -24,7 +24,8 @@ defmodule Paperwork.Collections.Note do
                 can_read: Boolean.t(),
                 can_write: Boolean.t(),
                 can_share: Boolean.t(),
-                can_leave: Boolean.t()
+                can_leave: Boolean.t(),
+                can_change_permissions: Boolean.t()
             }
         },
         created_at: DateTime.t(),
@@ -95,7 +96,8 @@ defmodule Paperwork.Collections.Note do
                     can_read: true,
                     can_write: true,
                     can_share: true,
-                    can_leave: false
+                    can_leave: false,
+                    can_change_permissions: true
                 }
             },
             created_at: DateTime.utc_now(),
