@@ -8,6 +8,7 @@ defmodule Paperwork.Notes do
             json(conn, %{service: :paperwork_service_notes})
         end
 
+        mount Paperwork.Notes.Endpoints.Internal.Notes
         mount Paperwork.Notes.Endpoints.Notes
     end
 
