@@ -45,6 +45,14 @@ defmodule Paperwork.Collections.Note do
 
     use Paperwork.Collections
 
+    @permissions_default_owner %{
+        can_read: true,
+        can_write: true,
+        can_share: true,
+        can_leave: false,
+        can_change_permissions: true
+    }
+
     @spec show(id :: BSON.ObjectId.t) :: {:ok, %__MODULE__{}} | {:notfound, nil}
     def show(%BSON.ObjectId{} = id) when is_map(id) do
         show(%__MODULE__{:id => id})
@@ -91,14 +99,9 @@ defmodule Paperwork.Collections.Note do
                     |> Map.put(:created_at, DateTime.utc_now())
             },
             access: %{
-                String.to_atom(global_id) => %{
+                String.to_atom(global_id) => Map.merge(@permissions_default_owner, %{
                     path: path,
-                    can_read: true,
-                    can_write: true,
-                    can_share: true,
-                    can_leave: false,
-                    can_change_permissions: true
-                }
+                })
             },
             created_at: DateTime.utc_now(),
             updated_at: DateTime.utc_now(),
@@ -107,6 +110,71 @@ defmodule Paperwork.Collections.Note do
         |> collection_insert
         |> strip_privates
     end
+
+    defp query_with_access(%{} = query, %{} = version, false, global_id) when is_binary(global_id) do
+        query
+    end
+
+    defp query_with_access(%{} = query, %{} = version, true, global_id) when is_binary(global_id) do
+        query
+        |> Map.put(:"access.#{global_id}.can_change_permissions",
+            true)
+    end
+
+    defp set_with_access(%{} = set, %{} = version, false, global_id) when is_binary(global_id) do
+        set
+    end
+
+    defp set_with_access(%{} = set, %{} = version, true, global_id) when is_binary(global_id) do
+        set
+        |> Map.merge(
+            Map.get(version, :access)
+            |> steamroll_access()
+            |> Map.to_list()
+            |> Enum.reduce(%{},
+                fn {k, v}, merged_map ->
+                    split_key =
+                        k
+                        |> String.split(".")
+
+                    access_gid =
+                        split_key
+                        |> List.first()
+
+                    access_permission_name =
+                        split_key
+                        |> List.last()
+
+                    with \
+                        {:ok, _} <- validate_access_gid(access_gid),
+                        {:ok, _} <- validate_access_permission(access_permission_name, v) do
+                            Map.merge(merged_map,
+                                %{
+                                    String.to_atom("access.#{k}") => v
+                                })
+                    else
+                        err ->
+                            Logger.error("Could not add access changeset: #{err}")
+                            merged_map
+                    end
+                end)
+        )
+    end
+
+    defp validate_access_gid(global_id), do: Paperwork.Id.validate_gid(global_id)
+
+    defp validate_access_permission(permission_name, permission_value) when is_binary(permission_name) and is_boolean(permission_value) do
+        found_permission_name = @permissions_default_owner
+        |> Map.to_list()
+        |> List.keyfind(String.to_atom(permission_name), 0)
+
+        case found_permission_name do
+            nil -> {:error, "Permission invalid"}
+            valid -> {:ok, {permission_name, permission_value}}
+        end
+    end
+
+    defp validate_access_permission(permission_name, permission_value), do: {:error, "Permission invalid"}
 
     @spec update_using_version(version :: Map.t, global_id :: String.t) :: {:ok, %__MODULE__{}} | {:error, String.t}
     def update_using_version(%{id: id, title: _title, body: _body, attachments: _attachments, tags: _tags, path: path} = version, global_id) when is_binary(id) and is_map(version) and is_binary(global_id) do
@@ -117,19 +185,24 @@ defmodule Paperwork.Collections.Note do
             "access.#{global_id}.can_read": true,
             "access.#{global_id}.can_write": true
         }
+        |> query_with_access(version, version |> Map.has_key?(:access), global_id)
+
+        changeset = %{
+            version: version_id,
+            "versions.#{version_id}":
+                version
+                |> Map.delete(:id)
+                |> Map.delete(:path)
+                |> Map.delete(:access)
+                |> Map.put(:created_by, global_id)
+                |> Map.put(:created_at, DateTime.utc_now()),
+            "access.#{global_id}.path": path,
+            updated_at: DateTime.utc_now()
+        }
+        |> set_with_access(version, version |> Map.has_key?(:access), global_id)
 
         %{
-            "$set": %{
-                version: version_id,
-                "versions.#{version_id}":
-                    version
-                    |> Map.delete(:id)
-                    |> Map.delete(:path)
-                    |> Map.put(:created_by, global_id)
-                    |> Map.put(:created_at, DateTime.utc_now()),
-                "access.#{global_id}.path": path,
-                updated_at: DateTime.utc_now(),
-            }
+            "$set": changeset
         }
         |> collection_update_manually(query)
         |> strip_privates
@@ -179,4 +252,25 @@ defmodule Paperwork.Collections.Note do
     def current_version({:notfound, _} = model, global_id) when is_binary(global_id) do
         model
     end
+
+    def steamroll_access(map) when is_map(map) do
+        map
+        |> Map.to_list()
+        |> to_flat_map(%{})
+    end
+
+    defp to_flat_map([{pk, %{} = v} | t], acc) do
+        v
+        |> to_list(pk)
+        |> to_flat_map(to_flat_map(t, acc))
+    end
+
+    defp to_flat_map([{k, v} | t], acc), do: to_flat_map(t, Map.put_new(acc, k, v))
+    defp to_flat_map([], acc), do: acc
+
+    defp to_list(map, pk) when is_atom(pk), do: to_list(map, Atom.to_string(pk))
+    defp to_list(map, pk) when is_binary(pk), do: Enum.map(map, &update_key(pk, &1))
+
+    defp update_key(pk, {k, v} = _val) when is_atom(k), do: update_key(pk, {Atom.to_string(k), v})
+    defp update_key(pk, {k, v} = _val) when is_binary(k), do: {"#{pk}.#{k}", v}
 end
