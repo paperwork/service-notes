@@ -8,7 +8,7 @@ defmodule Paperwork.Notes.Endpoints.Internal.Notes do
     namespace :internal do
         namespace :notes do
             get do
-                response = Paperwork.Collections.Notes.list()
+                response = Paperwork.Collections.Note.list()
                 conn
                 |> resp(response)
             end
