@@ -75,6 +75,7 @@ defmodule Paperwork.Notes.Endpoints.Notes do
                 requires :tags,        type: List[String]
                 requires :meta,        type: Map
                 requires :path,        type: String
+                optional :access,      type: Map
             end
             put do
                 global_id =
