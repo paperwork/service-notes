@@ -161,7 +161,17 @@ defmodule Paperwork.Collections.Note do
         )
     end
 
-    defp validate_access_gid(global_id), do: Paperwork.Id.validate_gid(global_id)
+    defp validate_access_gid(global_id) do
+        with \
+            {:ok, _} = Paperwork.Id.validate_gid(global_id),
+            {:ok, user} = Paperwork.Internal.Request.user!(global_id) do
+                {:ok, user}
+        else
+            err ->
+                Logger.error("Validation of access GID failed: #{err}")
+                {:error, "Supplied GID (#{global_id}) seems to be invalid"}
+        end
+    end
 
     defp validate_access_permission(permission_name, permission_value) when is_binary(permission_name) and is_boolean(permission_value) do
         found_permission_name = @permissions_default_owner
@@ -177,19 +187,20 @@ defmodule Paperwork.Collections.Note do
     defp validate_access_permission(permission_name, permission_value), do: {:error, "Permission invalid"}
 
     @spec update_using_version(version :: Map.t, global_id :: String.t) :: {:ok, %__MODULE__{}} | {:error, String.t}
-    def update_using_version(%{id: id, title: _title, body: _body, attachments: _attachments, tags: _tags, path: path} = version, global_id) when is_binary(id) and is_map(version) and is_binary(global_id) do
-        version_id = Mongo.object_id() |> BSON.ObjectId.encode!()
+    def update_using_version(%{id: id, version: current_version_id, title: _title, body: _body, attachments: _attachments, tags: _tags, path: path} = version, global_id) when is_binary(id) and is_binary(current_version_id) and is_map(version) and is_binary(global_id) do
+        new_version_id = Mongo.object_id() |> BSON.ObjectId.encode!()
 
         query = %{
             id: id,
+            version: current_version_id,
             "access.#{global_id}.can_read": true,
             "access.#{global_id}.can_write": true
         }
         |> query_with_access(version, version |> Map.has_key?(:access), global_id)
 
         changeset = %{
-            version: version_id,
-            "versions.#{version_id}":
+            version: new_version_id,
+            "versions.#{new_version_id}":
                 version
                 |> Map.delete(:id)
                 |> Map.delete(:path)
@@ -222,6 +233,7 @@ defmodule Paperwork.Collections.Note do
     def current_version(%__MODULE__{id: id, version: version_id, versions: versions_map, access: access} = _model, global_id) when is_binary(version_id) and is_map(versions_map) and is_map(access) and is_binary(global_id) do
         versions_map
         |> Map.get(String.to_atom(version_id))
+        |> Map.put(:version, version_id)
         |> Map.put(:path,
             access
             |> Map.get(String.to_atom(global_id))
@@ -238,8 +250,13 @@ defmodule Paperwork.Collections.Note do
                             Map.get(access, access_key)
                             |> Map.delete(:path)
                             |> Map.put(:user,
+                                # TODO: This is a bit hacky
+                                # The notes collection should not be needing to access a different domain. However,
+                                # in order to simplify requests for the clients, we perform the aggregation of user data
+                                # in this place. Another, probably cleaner solution would be, to pass the pure result
+                                # further up to an aggregation/breakdown service that takes care of this.
                                 Paperwork.Internal.Request.user!(Atom.to_string(access_key))
-                                |> Map.take(["email", "name"]) # TODO: Should/shouldn't the email address be returned?
+                                |> Map.take(["email", "name"])
                             )
                     })
                 }

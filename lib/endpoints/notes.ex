@@ -69,6 +69,7 @@ defmodule Paperwork.Notes.Endpoints.Notes do
 
             desc "Update Note"
             params do
+                requires :version,     type: String
                 requires :title,       type: String
                 requires :body,        type: String
                 requires :attachments, type: List[String]
