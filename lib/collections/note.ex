@@ -76,11 +76,9 @@ defmodule Paperwork.Collections.Note do
         |> strip_privates
     end
 
-    @spec list(global_id :: String.t) :: {:ok, [%__MODULE__{}]} | {:notfound, nil}
-    def list(global_id) when is_binary(global_id) do
-        %{
-            "access.#{global_id}.can_read": true
-        }
+    @spec list(query :: Map.t) :: {:ok, [%__MODULE__{}]} | {:notfound, nil}
+    def list(%{} = query) when is_map(query) do
+        query
         |> collection_find(true)
         |> strip_privates
     end
@@ -111,14 +109,36 @@ defmodule Paperwork.Collections.Note do
         |> strip_privates
     end
 
+    def query_can_read(%{} = query, global_id) when is_binary(global_id) do
+        query
+        |> Map.put(
+            :"access.#{global_id}.can_read",
+            true
+        )
+    end
+
+    def query_updated_since(%{} = query, nil) do
+        query
+    end
+
+    def query_updated_since(%{} = query, epoch) when is_integer(epoch) do
+        query
+        |> Map.put(
+            :updated_at,
+            %{"$gte": DateTime.from_unix!(epoch, :second)}
+        )
+    end
+
     defp query_with_access(%{} = query, %{} = version, false, global_id) when is_binary(global_id) do
         query
     end
 
     defp query_with_access(%{} = query, %{} = version, true, global_id) when is_binary(global_id) do
         query
-        |> Map.put(:"access.#{global_id}.can_change_permissions",
-            true)
+        |> Map.put(
+            :"access.#{global_id}.can_change_permissions",
+            true
+        )
     end
 
     defp set_with_access(%{} = set, %{} = version, false, global_id) when is_binary(global_id) do
