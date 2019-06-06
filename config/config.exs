@@ -26,5 +26,9 @@ config :paperwork, :internal,
     attachments: {:system, :string, "INTERNAL_RESOURCE_ATTACHMENTS", "http://localhost:8883/internal/attachments"},
     journals:    {:system, :string, "INTERNAL_RESOURCE_JOURNALS",    "http://localhost:8884/internal/journals"}
 
+config :paperwork, :events,
+    url: {:system, :string, "EVENTS_URL", "amqp://localhost"},
+    reconnect_interval: {:system, :integer, "EVENTS_RECONNECT_INTERVAL", 10_000}
+
 config :logger,
     backends: [:console]
