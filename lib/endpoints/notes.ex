@@ -1,4 +1,5 @@
 defmodule Paperwork.Notes.Endpoints.Notes do
+    require Logger
     use Paperwork.Notes.Server
     use Paperwork.Helpers.Response
 
@@ -58,6 +59,7 @@ defmodule Paperwork.Notes.Endpoints.Notes do
                 params
                 |> Paperwork.Collections.Note.create_using_version(global_id)
                 |> Paperwork.Collections.Note.current_version(global_id)
+                |> Paperwork.Helpers.Journal.api_response_to_journal(params, :create, :note, :user, global_id)
 
             conn
             |> resp(response)
@@ -98,6 +100,7 @@ defmodule Paperwork.Notes.Endpoints.Notes do
                     params
                     |> Paperwork.Collections.Note.update_using_version(global_id)
                     |> Paperwork.Collections.Note.current_version(global_id)
+                    |> Paperwork.Helpers.Journal.api_response_to_journal(params, :update, :note, :user, global_id)
 
                 conn
                 |> resp(response)
