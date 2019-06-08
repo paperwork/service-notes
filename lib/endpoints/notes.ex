@@ -59,7 +59,24 @@ defmodule Paperwork.Notes.Endpoints.Notes do
                 params
                 |> Paperwork.Collections.Note.create_using_version(global_id)
                 |> Paperwork.Collections.Note.current_version(global_id)
-                |> Paperwork.Helpers.Journal.api_response_to_journal(params, :create, :note, :user, global_id)
+
+                case response do
+                    {:ok, note} ->
+                        response
+                            |> Paperwork.Helpers.Journal.api_response_to_journal(
+                                params,
+                                :create,
+                                :note,
+                                :user,
+                                global_id,
+                                note
+                                |> Map.get(:access)
+                                |> Map.keys
+                                |> Enum.map(fn access_id -> access_id |> Paperwork.Id.from_gid() end)
+                            )
+                    _ ->
+                        Logger.warn("Note could not be created")
+                end
 
             conn
             |> resp(response)
@@ -100,7 +117,50 @@ defmodule Paperwork.Notes.Endpoints.Notes do
                     params
                     |> Paperwork.Collections.Note.update_using_version(global_id)
                     |> Paperwork.Collections.Note.current_version(global_id)
-                    |> Paperwork.Helpers.Journal.api_response_to_journal(params, :update, :note, :user, global_id)
+
+                case response do
+                    {:ok, note} ->
+                        relevance = case params |> Map.has_key?(:access) do
+                            true ->
+                                previous_access_ids =
+                                    note
+                                    |> Map.get(:access)
+                                    |> Map.keys
+                                    |> Enum.map(fn access_id -> Atom.to_string(access_id) end)
+
+                                new_access_ids =
+                                    params
+                                    |> Map.get(:access)
+                                    |> Map.keys
+
+                                removed_access_ids =
+                                    previous_access_ids -- new_access_ids
+
+                                combined_access_ids =
+                                    new_access_ids ++ removed_access_ids
+
+                                combined_access_ids
+                                |> IO.inspect
+                                |> Enum.uniq()
+                            false ->
+                                note
+                                |> Map.get(:access)
+                                |> Map.keys
+                        end
+
+                        response
+                            |> Paperwork.Helpers.Journal.api_response_to_journal(
+                                params,
+                                :update,
+                                :note,
+                                :user,
+                                global_id,
+                                relevance
+                                |> Enum.map(fn access_id -> access_id |> Paperwork.Id.from_gid() end)
+                            )
+                    _ ->
+                        Logger.warn("No matching note was found")
+                end
 
                 conn
                 |> resp(response)
