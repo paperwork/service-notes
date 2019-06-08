@@ -183,8 +183,8 @@ defmodule Paperwork.Collections.Note do
 
     defp validate_access_gid(global_id) do
         with \
-            {:ok, _} = Paperwork.Id.validate_gid(global_id),
-            {:ok, user} = Paperwork.Internal.Request.user!(global_id) do
+            {:ok, _} <- Paperwork.Id.validate_gid(global_id),
+            {:ok, user} <- Paperwork.Internal.Request.user(global_id) do
                 {:ok, user}
         else
             err ->
