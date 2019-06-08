@@ -33,7 +33,7 @@ defmodule Paperwork.Notes.Endpoints.Notes do
                     Paperwork.Collections.Note.list()
                     |> Paperwork.Collections.Note.current_version(global_id)
                 _ ->
-                    Paperwork.Collections.Note.list(query |> Paperwork.Collections.Note.query_can_read(global_id) |> IO.inspect)
+                    Paperwork.Collections.Note.list(query |> Paperwork.Collections.Note.query_can_read(global_id))
                     |> Paperwork.Collections.Note.current_version(global_id)
             end
 
