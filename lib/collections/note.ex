@@ -109,6 +109,28 @@ defmodule Paperwork.Collections.Note do
         |> strip_privates
     end
 
+    def query_ids(%{} = query, nil) do
+        query
+    end
+
+    def query_ids(%{} = query, ids) when is_binary(ids) do
+        ids_list =
+            String.split(ids, ",", trim: true)
+            |> Enum.dedup()
+            |> Enum.reduce([], fn maybe_id, new_list ->
+                case maybe_id do
+                    nil -> new_list
+                    id -> Enum.concat(new_list, [id |> Paperwork.Id.from_gid() |> Paperwork.Id.to_objectid(:id)])
+                end
+            end)
+
+        query
+        |> Map.put(
+            :_id,
+            %{"$in": ids_list}
+        )
+    end
+
     def query_can_read(%{} = query, global_id) when is_binary(global_id) do
         query
         |> Map.put(

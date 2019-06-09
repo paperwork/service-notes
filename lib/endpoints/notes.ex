@@ -11,19 +11,17 @@ defmodule Paperwork.Notes.Endpoints.Notes do
 
         params do
             optional :updated_since,       type: :integer
+            optional :ids,                 type: String
         end
         get do
             global_id =
                 conn
                 |> Paperwork.Auth.Session.get_global_id()
 
-            updated_since =
-                params
-                |> Map.get(:updated_since)
-
             query =
                 %{}
-                |> Paperwork.Collections.Note.query_updated_since(updated_since)
+                |> Paperwork.Collections.Note.query_updated_since(params |> Map.get(:updated_since))
+                |> Paperwork.Collections.Note.query_ids(params |> Map.get(:ids))
 
             response = case \
                 conn
