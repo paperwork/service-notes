@@ -195,6 +195,9 @@ defmodule Paperwork.Collections.Note do
                                     String.to_atom("access.#{k}") => v
                                 })
                     else
+                        {:notfound, _} ->
+                            Logger.error("Could not add access changeset: GID was not found")
+                            merged_map
                         err ->
                             Logger.error("Could not add access changeset: #{err}")
                             merged_map
@@ -209,9 +212,12 @@ defmodule Paperwork.Collections.Note do
             {:ok, user} <- Paperwork.Internal.Request.user(global_id) do
                 {:ok, user}
         else
-            err ->
-                Logger.error("Validation of access GID failed: #{err}")
-                {:error, "Supplied GID (#{global_id}) seems to be invalid"}
+            {:notfound, _} ->
+                Logger.warn("Internal request returned 404")
+                {:notfound, ""}
+            other ->
+                Logger.error("Validation of access GID failed: #{inspect other}")
+                {:badrequest, "Supplied GID (#{inspect global_id}) seems to be invalid"}
         end
     end
 
