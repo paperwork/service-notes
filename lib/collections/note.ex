@@ -278,9 +278,12 @@ defmodule Paperwork.Collections.Note do
         end
     end
 
-    def current_version(%__MODULE__{id: id, version: version_id, versions: versions_map, access: access} = _model, global_id) when is_binary(version_id) and is_map(versions_map) and is_map(access) and is_binary(global_id) do
-        versions_map
-        |> Map.get(String.to_atom(version_id))
+    def current_version(%__MODULE__{id: id, version: version_id, versions: versions_map, access: access, created_at: created_at} = _model, global_id) when is_binary(version_id) and is_map(versions_map) and is_map(access) and is_binary(global_id) do
+        current_version =
+            versions_map
+            |> Map.get(String.to_atom(version_id))
+
+        current_version
         |> Map.put(:version, version_id)
         |> Map.put(:path,
             access
@@ -312,6 +315,8 @@ defmodule Paperwork.Collections.Note do
             |> elem(1)
         )
         |> Map.put(:id, BSON.ObjectId.encode!(id)) #TODO: Fix this hack in a generic way
+        |> Map.put(:updated_at, Map.get(current_version, :created_at)) # Let's store the value of version.created_at (referencing the time that specific version was created) into version.updated_at ...
+        |> Map.put(:created_at, created_at) # ... and replace that value with the actual note's created_at value
     end
 
     def current_version({:notfound, _} = model, global_id) when is_binary(global_id) do
